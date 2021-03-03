@@ -1,4 +1,4 @@
-# plug
+# replug
 
 > A lightweight plugin manager for the Map/Reduce and the Observable world
 
