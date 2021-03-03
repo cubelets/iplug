@@ -7,13 +7,13 @@
 Using npm:
 
 ```sh
-npm install --save plug
+npm install --save @cubelets/replug
 ```
 
 or using yarn:
 
 ```sh
-yarn add replug --dev
+yarn add @cubelets/replug --dev
 ```
 
 ## Usage

@@ -1,5 +1,5 @@
 {
-  "name": "replug",
+  "name": "@cubelets/replug",
   "version": "0.2.0",
   "description": "A lightweight plugin manager",
   "main": "index.js",
@@ -9,6 +9,9 @@
   "repository": {
     "type": "git",
     "url": "github.com/cubelets/replug"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "javascript",
