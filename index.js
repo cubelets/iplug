@@ -6,7 +6,7 @@ const pluginModules = {
 }
 
 
-export function plug(requiredPlugins, env) {
+export function replug(requiredPlugins, env) {
 	const hooks = []
 		([].concat(requiredPlugins || [])) 
 		// plugins come as a <name>, or a [<name>, [{config}]] structure

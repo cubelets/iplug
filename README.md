@@ -1,6 +1,6 @@
 # plug
 
-> A lightweight plugin manager.
+> A lightweight plugin manager for the Map/Reduce and the Observable world
 
 ## Install
 
@@ -13,7 +13,7 @@ npm install --save plug
 or using yarn:
 
 ```sh
-yarn add plug --dev
+yarn add replug --dev
 ```
 
 ## Usage
@@ -29,7 +29,7 @@ const pluginsList = [examplePlugin]
 const config = {
 	lang: 'en'
 }
-const plugins = plug(pluginsList, config)
+const plugins = replug(pluginsList, config)
 
 const initialData = 'Hello'
 const result = plugins('message', initialData) // 'Hello, world'
@@ -49,7 +49,7 @@ module.js
 import {moderation} from './moderation.js
 const pluginsList = [moderation]
 const config = { }
-const plugins = plug(pluginsList, config)
+const plugins = replug(pluginsList, config)
 
 const initialData[] = await fetch('/api/getMessages').then(x=>x.json())
 const result = plugins('moderate', data)
