@@ -1,35 +1,40 @@
 // import { default as plugin1 } from '/path/to/plugin1'
 // import { default as plugin2 } from '/path/to/plugin2'
-const pluginModules = {
+const pluginModules = new Map(Object.entries({
 	//plugin1
 	//plugin2
-}
-
+})
 
 export function replug(requiredPlugins, env) {
-	const hooks = []
-		([].concat(requiredPlugins || [])) 
-		// plugins come as a <name>, or a [<name>, [{config}]] structure
+	if(!requiredPlugins && pluginModules) {
+		requiredPlugins = [...pluginModules.keys()]
+	}
+
+	const merge = (hooks, [pluginName, config]) =>
+		// look all hooks up (plugin modules)
+		Object.entries(pluginModules.get(pluginName) || {[pluginName]: ()=>{throw new Error(`plugin ${pluginName} not defined`)}})
+		// initialise them (they expose a default function for that)
+		.map(([hook, init]) => [hook, init({...config, ...env})])
+		// and register them for later lookup and use
+		.reduce((hooks, [hook, added]) => hooks.set(hook, [].concat(hooks.get(hook) || [], added || [])), hooks)
+
+	const add = (plugins, initial = new Map()) => [].concat(plugins || [])
+		// plugins come as a <name>, or a [<name>, {...config}] structure
 		.map(plugin => Array.isArray(plugin) ? plugin : [plugin, []])
-		// for each plugin
-		.reduce((hooks, [pluginName, config]) => Object
-			// look all hooks up (plugin modules)
-			.entries(pluginModules[pluginName] || {[pluginName]: ()=>{throw new Error(`plugin ${pluginName} not defined`)}})
-			// initialise them (they expose a default function for that)
-			.map(([hook, init]) => [hook, init({...config, ...env})])
-			// and register them for later lookup and use
-			.reduce((hooks, [hook, added]) => ({...hooks, ...{[hook]: [].concat(hooks[hook] || [], added || [])}}), hooks)
-		, {})
+		.reduce(merge, initial)
 
-	// so that
-	return (msg, initialData) =>
-		// each registered hook
-		// FIXME: hack: added a noop function to
-		// return '' if no plugin is defined for the given hook.
-		// This is a bit naive, as plugins may not just want to return strings.
-		(hooks[msg] || [() => ''])
-			// we can call passing some arguments
-			//.reduce((data, plugin) => data.then(plugin), Promise.resolve(initialData))
-			.reduce((data, plugin) => plugin(data), initialData)
+	let hooks = add(requiredPlugins)
+
+	const transform = (data, plugin) => plugin(data)
+	const fn = (msg, initialData) => (hooks.get(msg) || []).reduce(transform, initialData)
+	const register = (name, p) => pluginModules.set(name, p)
+	fn.add = (name, p, config) => {
+		register(name, p)
+		hooks = add(name, hooks)
+	}
+	fn.reduce = fn
+	fn.map = (msg, initialData) => (hooks.get(msg) || []).map(function callPlugin(plugin){return plugin(initialData)})
+	fn.hooks = hooks
+
+	return fn
 }
-
