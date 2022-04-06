@@ -1,7 +1,7 @@
 {
   "name": "iplug",
   "version": "0.3.0",
-  "description": "The lightest plugin manager",
+  "description": "The lightest JavaScript plugin manager/messagebus for the Map/Reduce world",
   "main": "dist/iplug.cjs",
   "module": "dist/iplug.mjs",
   "exports": {
