@@ -1,8 +1,3 @@
-const babelConfig = require('./babel.config.json');
-
-require('babel-register')(babelConfig);
-require('@babel/polyfill');
-
 const common = {
   verbose: true,
   testPathIgnorePatterns: ['<rootDir>/node_modules/'],
@@ -13,7 +8,7 @@ const common = {
   moduleFileExtensions: ['js'],
 };
 
-module.exports = {
+export default {
   projects: [
     {
       ...common,
