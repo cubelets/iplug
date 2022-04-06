@@ -1,71 +1,189 @@
-# replug
+# iPlug
+> The lightest JavaScript plugin manager/messagebus for the Map/Reduce world
 
-> A lightweight plugin manager for the Map/Reduce and the Observable world
-
-## Install
-
+## Installation
 Using npm:
 
-```sh
-npm install --save @cubelets/replug
-```
-
-or using yarn:
-
-```sh
-yarn add @cubelets/replug --dev
+``` sh
+npm install --save iplug
 ```
 
 ## Usage
-
 You want to use plugins to extend the functionality of your code.
 Given a list of plugins, your application will first initialise and then run them.
 
 ### Hello World
 
-```
-import {examplePlugin} from './examplePlugin.js
-const pluginsList = [examplePlugin]
-const config = {
-	lang: 'en'
+**`main.js`**
+``` js
+import iplug from 'iplug'
+
+import module1 from './plugins/module1.js'
+import module2 from './plugins/module2.js'
+
+const modules = {
+	module1,
+	module2,
 }
-const plugins = replug(pluginsList, config)
 
-const initialData = 'Hello'
-const result = plugins('message', initialData) // 'Hello, world'
+const plugins = iplug(modules).init()
 
-Each plugin exports a hash of hooks that can process input and return an output.
-examplePlugin.js
+function main() {
+	const input = 'test payload'
+	const output = plugins.chain('test:message', input)
+	console.log(output)
+}
+
+main()
 ```
+
+Each plugin exports an object with the messagebus messages it wants to process.
+
+**`example-plugin.js`**
+``` js
 export default {
-	'exampleMessage': config => data => `${data}, world!`
+	'category1:message1': config => data => `result for a call to category1:message1 - payload was ${data}`,
+	'category2:message2': config => data => `result for a call to category1:message1 - payload was ${data}`,
 }
-
-### Content Moderation
-You want to use plugins to moderate content before rendering
-
-module.js
 ```
+
+### Map, Reduce, Chain, All
+There are two ways you can call plugins: in sequence, or in parallel.
+
+#### Sequential processing
+Calling plugins in sequence means starting with an optional initial value, and chaining it through each, so the output of one becomes the input of the next, and the final result is the output of the last.
+This is useful when your plugins can be somewhat aware of each-other and the output of any may be the final one.
+
+**`main.js`**
+``` js
+// this returns the output of the last plugin in the chain
+plugins.chain(<message> [, initial data])
+plugins.reduce(<message> [, initial data])
+plugins(<message>, [initial data])
+```
+
+`reduce` is an alias for `chain`.
+For chained calls you can also omit both the `chain` or `reduce` keywords and just call:
+
+#### Parallel processing
+Calling plugins in parallel means passing the same optional initial value, then collecting the results of each together, which come out as an array, perhaps for further processing.
+This is useful if you want to run many plugins in parallel, especially async ones, or that need to run in isolation from the input or the output of the other plugins.
+
+**`main.js`**
+``` js
+// this returns an array of your plugins' output
+plugins.map(<message> [, initial data])
+plugins.all(<message> [, initial data])
+plugins.parallel(<message> [, initial data])
+```
+
+`all` is an alias for `map`
+
+### Example: Content Moderation
+You want to use plugins to moderate content before rendering it, by passing it through a number of plugins, each of which has to approve the content.
+
+**`module.js`**
+``` js
 import {moderation} from './moderation.js
 const pluginsList = [moderation]
 const config = { }
-const plugins = replug(pluginsList, config)
+const plugins = iplug(pluginsList, config)
 
 const initialData[] = await fetch('/api/getMessages').then(x=>x.json())
 const result = plugins('moderate', data)
 ```
 
-moderation.js
-```
+**`moderation.js`**
+``` js
 export default {
 	'moderate': config => {
 		const blackList = await fetch('/word-blacklist').then(x=>x.json())
 		return data[] => data.map(str => blackList.forEach(word => str.replace(word, '###redacted###')))
 	}
 }
+```
 
-### HTML Plugins
+### Advanced usage: streaming plugins with Observables
+You may want each plugin to emit more data over time, effectively exposing an Observable interface back to the main application
 
+**`plugin.js`**
+``` js
+import { Observable } from 'rxjs'
+const sourceStream = Observable(...)
 
-### Duplex streams via Observables (like a messagebus)
+export default {
+	'getdata': config => data => sourceStream,
+}
+```
+
+**`app.js`**
+``` js
+import { merge } from 'rxjs'
+
+// Get an Observable from each plugin.
+const streams = streamingPlugins.map('getdata')
+merge(streams)
+	.subscribe(doSomething)
+
+```
+
+### Advanced usage: duplex streams via Observables
+You can pass an observable to each of your plugins and get one back to enable two-way communication over time
+
+**`echo.js`**
+``` js
+import { Observable } from 'rxjs'
+const sourceStream = Observable(...)
+
+export default {
+	'duplex': config => { inputStream } => inputStream.map(inputMessage=>`This is a reply to ${inputMessage}.`,
+}
+```
+
+**`app.js`**
+``` js
+import { Subject } from 'rxjs'
+import { merge } from 'rxjs'
+
+const outputStream = new Subject()
+
+const streams = streamingPlugins.map('duplex', outputStream)
+merge(streams)
+	.subscribe(doSomething)
+
+```
+
+## Why should every plugin export a function returning a function?
+This extra step allows some plugins to perform some one-time (perhaps slow) initialisation and return a "production" function that's geared-up for high performance repeated executions.
+It's often best to perform initialisation in the main handler function to enable multiple instances of the same plugin to be used in different isolated contexts (multiple message buses in the same application).
+
+**`plugin.js`**
+``` js
+// some global initialisation can go here, but the state will be shared!
+// ...
+
+export default {
+	'message:handler': config => {
+		// perform some more initialisation here when you want more isolation.
+		// const slow = slowOperation
+		return data => {
+			// put your performance-optimised code here, to run multiple times
+		}
+	}
+}
+```
+
+**`main.js`**
+``` js
+// The following two message buses are meant to run independently
+const messageBus1 = plugins()
+const messageBus2 = plugins()
+
+// The following two calls will be run in isolation from each-other
+messageBus1.chain('message:handler')
+messageBus2.chain('message:handler')
+```
+
+### Examples
+See the examples folder
 
