@@ -188,7 +188,7 @@ messageBus1.chain('message:handler')
 messageBus2.chain('message:handler')
 ```
 
-### Unit testing your plugins
+## Unit testing your plugins
 Writing unit tests for your plugins should be just as simple as calling the function they export for a particular event/topic.
 
 ``` js
@@ -225,6 +225,6 @@ describe('plugin2', () => {
 });
 ```
 
-### Examples
+## Examples
 You can find more [examples](https://github.com/cubelets/iplug/tree/master/examples) in the respective folder
 
