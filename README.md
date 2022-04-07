@@ -188,6 +188,43 @@ messageBus1.chain('message:handler')
 messageBus2.chain('message:handler')
 ```
 
+### Unit testing your plugins
+Writing unit tests for your plugins should be just as simple as calling the function they export for a particular event/topic.
+
+``` js
+import plugin from '/plugins/double-it.js'
+
+describe('plugin1', () => {
+	describe('when handling a "test:topic"', () => {
+
+		it('doubles its input', () => {
+			const fn = plugin['test:topic']()
+			expect(fn(2)).toEqual(4)
+		});
+
+	});
+});
+```
+
+Following is an example unit test for a hypothetical plugin that returns 0, written for Jest, but easily adaptable to other test frameworks.
+
+``` js
+import plugin from '/plugins/plugin2.js'
+import fixture from '/plugins/plugin2.fixture.js'
+
+describe('plugin2', () => {
+	describe('when handling a "test:event"', () => {
+
+		it('returns 0', () => {
+			const fn = plugin['test:event']()
+			const result = fn(fixture)
+			expect(result).toEqual(0)
+		});
+
+	});
+});
+```
+
 ### Examples
-See the examples folder
+You can find more [examples](https://github.com/cubelets/iplug/tree/master/examples) in the respective folder
 
