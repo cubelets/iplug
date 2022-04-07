@@ -17,7 +17,10 @@
   "scripts": {
     "build": "rimraf dist && rimraf doc && rollup -c",
     "dev": "rollup -c -w",
-    "test": "npx jest --env=node"
+    "test": "npx jest --env=node",
+    "preversion": "npm test",
+    "version": "npm run build && git add -fA dist",
+    "postversion": "git push && git push --tags"
   },
   "testMatch": [
     "**/*.spec.(ts|js)"

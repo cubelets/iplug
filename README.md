@@ -1,5 +1,5 @@
 # iPlug
-> The lightest JavaScript plugin manager/messagebus for the Map/Reduce world
+> The lightest JavaScript plugin system / plugin manager / messagebus for the map/reduce world
 
 ## Installation
 Using npm:
@@ -9,8 +9,12 @@ npm install --save iplug
 ```
 
 ## Usage
-You want to use plugins to extend the functionality of your code.
-Given a list of plugins, your application will first initialise and then run them.
+You want to use plugins to dynamically extend the functionality of your code.
+
+The core part of your application loads your plugins and creates one or more message buses to communicate with them, through a number of topics.
+Plugins can register their interest to any number of topics.
+When you want to defer control to plugins you emit a message on a topic and all registered plugins will be invoked, sequentially or in parallel.
+
 
 ### Hello World
 
