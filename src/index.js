@@ -20,9 +20,9 @@ export default function iPlug(modules) {
 				, new Map())
 			)
 
-			const fn = (msg, initialData) => (hooks.get(msg) || [() => '']).reduce((data, plugin) => plugin(data), initialData)
+			const fn = (msg, initialData) => (hooks.get(msg) || [x => x]).reduce((data, plugin) => plugin(data), initialData)
 			fn.reduce = fn.chain = fn.series = fn
-			fn.map = fn.parallel = fn.all = (msg, initialData) => (hooks.get(msg) || [() => '']).map(function callPlugin(plugin){return plugin(initialData)})
+			fn.map = fn.parallel = fn.all = (msg, initialData) => (hooks.get(msg) || []).map(function callPlugin(plugin){return plugin(initialData)})
 
 			return fn
 		}
