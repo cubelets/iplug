@@ -11,6 +11,14 @@ describe('<<< iPlug >>> the lightest plugin manager/message bus for JavaScript',
 				const plugins = plug(modules).init()
 				expect(plugins('test:message', '0')).toBe('hello')
 			})
+
+			it('executes it if it\'s exported as a function that returns a manifest', () => {
+				const modules = {
+					module1: () => ({ 'test:message': config => data => `hello` }),
+				}
+				const plugins = plug(modules).init()
+				expect(plugins('test:message', '0')).toBe('hello')
+			})
 		})
 
 		describe('Enabling plugins', () => {

@@ -1,5 +1,9 @@
 export default function iPlug(modules) {
-	const pluginModules = new Map(Object.entries(modules || {}))
+	const pluginModules = new Map(
+		Object
+			.entries(modules || {})
+			.map(([name, module]) => [name, typeof module == 'function' ? module() : module])
+	)
 
 	return {
 		init: function iPlugInit(requiredPlugins, env) {
