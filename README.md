@@ -225,6 +225,55 @@ describe('plugin2', () => {
 });
 ```
 
+### Using Globals
+Global variables, even inside an ES6 module, can pose various challenges to unit testing.
+Consider the follwing plugin:
+
+``` js
+const globalState = get_some_state()
+
+export default {
+	'message:handler': config => data => globalState(data),
+}
+```
+
+The problem here is sometimes it can be hard for test frameworks to mock or stub `globalState` in order to force a certain behaviour.
+What you may experience is the first time a unit test runs, the globalState may be mocked as expected, but at subsequent runs, re-mocking or re-stubbing may just not work, failing the tests.
+
+A solution to this problem is creating a plugin that exports a function, which in turn will return everything else.
+
+``` js
+export default function() {
+	const globalState = get_some_state()
+
+	return {
+		'message:handler': config => data => globalState(data),
+	}
+}
+```
+
+This way, no global state will remain between test runs.
+
+``` js
+import initModule from '/plugins/plugin.js'
+
+describe('plugin', () => {
+	describe('when handling a "test:event"', () => {
+
+		it('returns 0', () => {
+			// Loading the plugin from a test will need this one extra line
+			const plugin = initModule()
+
+			const fn = plugin['test:event']()
+			const result = fn(fixture)
+			expect(result).toEqual(0)
+		});
+
+	});
+});
+```
+
+
 ## Examples
 You can find more [examples](https://github.com/cubelets/iplug/tree/master/examples) in the respective folder
 
