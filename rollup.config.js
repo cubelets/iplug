@@ -3,7 +3,6 @@ import commonjs from '@rollup/plugin-commonjs';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 import json from 'rollup-plugin-json';
 import { terser } from 'rollup-plugin-terser';
-import visualizer from 'rollup-plugin-visualizer';
 import cleanup from 'rollup-plugin-cleanup';
 
 const {
@@ -42,6 +41,5 @@ export default {
     sourceMaps(),
     terser(),
     cleanup({ sourcemap }),
-    visualizer({ filename: './doc/bundle-stats.html', sourcemap }),
   ],
 }
