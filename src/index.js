@@ -1,14 +1,14 @@
-export default function iPlug(modules) {
+export default function iPlug(modules, moduleConfig) {
 	const pluginModules = new Map(
 		Object
 			.entries(modules || {})
-			.map(([name, module]) => [name, typeof module == 'function' ? module() : module])
+			.map(([name, module]) => [name, typeof module == 'function' ? module(moduleConfig) : module])
 	)
 
 	return {
 		init: function iPlugInit(requiredPlugins, env) {
 			const hooks = new Map(
-				([].concat(requiredPlugins || [...pluginModules.keys()])) 
+				([].concat(requiredPlugins || [...pluginModules.keys()]))
 				// plugins come as a <name>, or a [<name>, [{config}]] structure
 				.map(plugin => Array.isArray(plugin) ? plugin : [plugin, []])
 				// for each plugin

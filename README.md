@@ -41,7 +41,34 @@ function main() {
 main()
 ```
 
-Each plugin exports an object with the messagebus messages it wants to process.
+Each plugin module can export:
+- A manifest object:
+	``` js
+		export default {
+			// ...
+			'message': config => data => ...
+		}
+	```
+- a function that can take an optional argument and returns a manifest object
+	``` js
+		export default (moduleConfig) => {
+			// keep state here for better testability
+
+			return {
+				'message': config => data => ...
+				// ...
+			}
+		}
+	```
+
+A manifest object is one whose keys are messagebus messages we want to register to, and handlers to be called when those are emitted
+``` ts
+type Handler<T> = (config: T) => (data: any) => any;
+
+type Manifest<T> = {
+	[message: string]: Handler<T>;
+};
+```
 
 **`example-plugin.js`**
 ``` js
@@ -158,7 +185,7 @@ merge(streams)
 ```
 
 ## Why should every plugin export a function returning a function?
-This extra step allows some plugins to perform some one-time (perhaps slow) initialisation and return a "production" function that's geared-up for high performance repeated executions.
+This extra step allows some plugins to perform some one-time (perhaps slow) initialisation and return a "production" function that's geared up for faster, repeated executions.
 It's often best to perform initialisation in the main handler function to enable multiple instances of the same plugin to be used in different isolated contexts (multiple message buses in the same application).
 
 **`plugin.js`**

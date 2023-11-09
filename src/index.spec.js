@@ -12,12 +12,23 @@ describe('<<< iPlug >>> the lightest plugin manager/message bus for JavaScript',
 				expect(plugins('test:message', '0')).toBe('hello')
 			})
 
-			it('executes it if it\'s exported as a function that returns a manifest', () => {
-				const modules = {
-					module1: () => ({ 'test:message': config => data => `hello` }),
-				}
-				const plugins = plug(modules).init()
-				expect(plugins('test:message', '0')).toBe('hello')
+			describe('if it\'s exported as a function that returns a manifest object', () => {
+				it('executes it', () => {
+					const modules = {
+						module1: () => ({ 'test:message': config => data => `hello` }),
+					}
+					const plugins = plug(modules).init()
+					expect(plugins('test:message', '0')).toBe('hello')
+				})
+
+				it('passes a moduleConfig parameter', () => {
+					const moduleConfig = 'xxx123'
+					const modules = {
+						module1: (moduleConfig) => ({ 'test:message': config => data => moduleConfig }),
+					}
+					const plugins = plug(modules, moduleConfig).init()
+					expect(plugins('test:message', '0')).toBe(moduleConfig)
+				})
 			})
 		})
 
