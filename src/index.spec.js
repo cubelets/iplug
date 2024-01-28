@@ -4,29 +4,30 @@ describe('<<< iPlug >>> the lightest plugin manager/message bus for JavaScript',
 	describe('Setup', () => {
 
 		describe('when we pass a plugin', () => {
-			it('makes it available for calling', () => {
+			it('makes it available for calling', async () => {
+				debugger;
 				const modules = {
-					module1: { 'test:message': config => data => `hello` },
+					module1: () => ({ 'test:message': data => `hello ${data}` }),
 				}
-				const plugins = plug(modules).init()
-				expect(plugins('test:message', '0')).toBe('hello')
+				const plugins = await plug(modules)
+				expect(plugins.serial('test:message', 'world')).toBe('hello world')
 			})
 
 			describe('if it\'s exported as a function that returns a manifest object', () => {
-				it('executes it', () => {
+				it('executes it', async () => {
 					const modules = {
-						module1: () => ({ 'test:message': config => data => `hello` }),
+						module1: () => ({ 'test:message': data => `hello` }),
 					}
-					const plugins = plug(modules).init()
+					const plugins = await plug(modules)
 					expect(plugins('test:message', '0')).toBe('hello')
 				})
 
-				it('passes a moduleConfig parameter', () => {
+				it('passes a moduleConfig parameter', async () => {
 					const moduleConfig = 'xxx123'
 					const modules = {
-						module1: (moduleConfig) => ({ 'test:message': config => data => moduleConfig }),
+						module1: { 'test:message': () => moduleConfig },
 					}
-					const plugins = plug(modules, moduleConfig).init()
+					const plugins = await plug(modules, moduleConfig)
 					expect(plugins('test:message', '0')).toBe(moduleConfig)
 				})
 			})
@@ -34,11 +35,11 @@ describe('<<< iPlug >>> the lightest plugin manager/message bus for JavaScript',
 
 		describe('Enabling plugins', () => {
 			describe('when we initialise an existing plugin', () => {
-				it('loads it as normal', () => {
+				it('loads it as normal', async () => {
 					const modules = {
-						module1: { 'test:message': config => data => `${data}-1` },
+						module1: { 'test:message': data => `${data}-1` },
 					}
-					expect(()=>plug(modules).init(['module1'])).not.toThrow()
+					expect(()=>plug(modules)).not.toThrow()
 				})
 			})
 
