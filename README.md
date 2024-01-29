@@ -1,5 +1,5 @@
 # iPlug
-> The lightest JavaScript plugin system / plugin manager / messagebus for the map/reduce world
+> The lightest JavaScript plugin system for the map/reduce world
 
 ## Installation
 Using npm:
@@ -30,11 +30,11 @@ const modules = {
 	module2,
 }
 
-const plugins = iplug(modules).init()
+const plugins = iplug(modules)
 
 function main() {
 	const input = 'test payload'
-	const output = plugins.chain('test:message', input)
+	const output = plugins.serial('test:message', input)
 	console.log(output)
 }
 
@@ -45,8 +45,8 @@ Each plugin module can export:
 - A manifest object:
 	``` js
 		export default {
+			'message': data => doSomethingWith(data),
 			// ...
-			'message': config => data => ...
 		}
 	```
 - a function that can take an optional argument and returns a manifest object
@@ -55,26 +55,18 @@ Each plugin module can export:
 			// keep state here for better testability
 
 			return {
-				'message': config => data => ...
+				'message': data => doSomethingWith(data),
 				// ...
 			}
 		}
 	```
 
-A manifest object is one whose keys are messagebus messages we want to register to, and handlers to be called when those are emitted
-``` ts
-type Handler<T> = (config: T) => (data: any) => any;
-
-type Manifest<T> = {
-	[message: string]: Handler<T>;
-};
-```
-
+A manifest object is one whose keys are messagebus topics we want to register to, and corresponding handler functions
 **`example-plugin.js`**
 ``` js
 export default {
-	'category1:message1': config => data => `result for a call to category1:message1 - payload was ${data}`,
-	'category2:message2': config => data => `result for a call to category1:message1 - payload was ${data}`,
+	'category1:message1': data => `result for a call to category1:message1 - payload was ${data}`,
+	'category2:message2': data => `result for a call to category1:message1 - payload was ${data}`,
 }
 ```
 
@@ -88,27 +80,20 @@ This is useful when your plugins can be somewhat aware of each-other and the out
 **`main.js`**
 ``` js
 // this returns the output of the last plugin in the chain
-plugins.chain(<message> [, initial data])
+plugins.serial(<message> [, initial data])
 plugins.reduce(<message> [, initial data])
-plugins(<message>, [initial data])
+plugins(<message> [, initial data])
 ```
 
-`reduce` is an alias for `chain`.
-For chained calls you can also omit both the `chain` or `reduce` keywords and just call:
-
 #### Parallel processing
-Calling plugins in parallel means passing the same optional initial value, then collecting the results of each together, which come out as an array, perhaps for further processing.
-This is useful if you want to run many plugins in parallel, especially async ones, or that need to run in isolation from the input or the output of the other plugins.
+You can call plugins in parallel, sync or async ones. Initial data will be passed to each as an argument.
 
 **`main.js`**
 ``` js
 // this returns an array of your plugins' output
 plugins.map(<message> [, initial data])
-plugins.all(<message> [, initial data])
 plugins.parallel(<message> [, initial data])
 ```
-
-`all` is an alias for `map`
 
 ### Example: Content Moderation
 You want to use plugins to moderate content before rendering it, by passing it through a number of plugins, each of which has to approve the content.
@@ -116,20 +101,22 @@ You want to use plugins to moderate content before rendering it, by passing it t
 **`module.js`**
 ``` js
 import {moderation} from './moderation.js
-const pluginsList = [moderation]
-const config = { }
-const plugins = iplug(pluginsList, config)
+const config = {
+	moderation: { enabled: true },
+}
 
-const initialData[] = await fetch('/api/getMessages').then(x=>x.json())
+const plugins = await iplug({moderation}, config);
+
+const initialData = await fetch('/api/getMessages').then(x=>x.json())
 const result = plugins('moderate', data)
 ```
 
 **`moderation.js`**
 ``` js
-export default {
-	'moderate': config => {
-		const blackList = await fetch('/word-blacklist').then(x=>x.json())
-		return data[] => data.map(str => blackList.forEach(word => str.replace(word, '###redacted###')))
+export default async () => {
+	const blackList = await fetch('/word-blacklist').then(x=>x.json());
+	return {
+		'moderate': data => data.map(str => blackList.forEach(word => str.replace(word, '###redacted###')))
 	}
 }
 ```
@@ -143,7 +130,7 @@ import { Observable } from 'rxjs'
 const sourceStream = Observable(...)
 
 export default {
-	'getdata': config => data => sourceStream,
+	'getdata': data => sourceStream,
 }
 ```
 
@@ -152,6 +139,7 @@ export default {
 import { merge } from 'rxjs'
 
 // Get an Observable from each plugin.
+const plugins = await iplug({});
 const streams = streamingPlugins.map('getdata')
 merge(streams)
 	.subscribe(doSomething)
@@ -163,11 +151,12 @@ You can pass an observable to each of your plugins and get one back to enable tw
 
 **`echo.js`**
 ``` js
-import { Observable } from 'rxjs'
-const sourceStream = Observable(...)
+import RxJS from 'rxjs'
 
 export default {
-	'duplex': config => { inputStream } => inputStream.map(inputMessage=>`This is a reply to ${inputMessage}.`,
+	'duplex': ({ inputStream }) => inputStream.pipe(
+		RxJS.map(inputMessage=>`This is a reply to ${inputMessage}.`)
+	),
 }
 ```
 
@@ -178,53 +167,25 @@ import { merge } from 'rxjs'
 
 const outputStream = new Subject()
 
-const streams = streamingPlugins.map('duplex', outputStream)
-merge(streams)
-	.subscribe(doSomething)
+const allStreams = merge(streamingPlugins.pipe(
+	map('duplex', outputStream)
+))
+
+allStreams.subscribe(doSomething)
 
 ```
 
-## Why should every plugin export a function returning a function?
-This extra step allows some plugins to perform some one-time (perhaps slow) initialisation and return a "production" function that's geared up for faster, repeated executions.
-It's often best to perform initialisation in the main handler function to enable multiple instances of the same plugin to be used in different isolated contexts (multiple message buses in the same application).
-
-**`plugin.js`**
-``` js
-// some global initialisation can go here, but the state will be shared!
-// ...
-
-export default {
-	'message:handler': config => {
-		// perform some more initialisation here when you want more isolation.
-		// const slow = slowOperation
-		return data => {
-			// put your performance-optimised code here, to run multiple times
-		}
-	}
-}
-```
-
-**`main.js`**
-``` js
-// The following two message buses are meant to run independently
-const messageBus1 = plugins()
-const messageBus2 = plugins()
-
-// The following two calls will be run in isolation from each-other
-messageBus1.chain('message:handler')
-messageBus2.chain('message:handler')
-```
-
-## Unit testing your plugins
+## Unit testing plugins
 Writing unit tests for your plugins should be just as simple as calling the function they export for a particular event/topic.
 
 ``` js
-import plugin from '/plugins/double-it.js'
+import module from '/plugins/double-it.js'
 
 describe('plugin1', () => {
 	describe('when handling a "test:topic"', () => {
 
 		it('doubles its input', () => {
+			const plugin = module()
 			const fn = plugin['test:topic']()
 			expect(fn(2)).toEqual(4)
 		});
@@ -236,13 +197,14 @@ describe('plugin1', () => {
 Following is an example unit test for a hypothetical plugin that returns 0, written for Jest, but easily adaptable to other test frameworks.
 
 ``` js
-import plugin from '/plugins/plugin2.js'
+import module from '/plugins/plugin2.js'
 import fixture from '/plugins/plugin2.fixture.js'
 
 describe('plugin2', () => {
 	describe('when handling a "test:event"', () => {
 
 		it('returns 0', () => {
+			const plugin = module()
 			const fn = plugin['test:event']()
 			const result = fn(fixture)
 			expect(result).toEqual(0)
