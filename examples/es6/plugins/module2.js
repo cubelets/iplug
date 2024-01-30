@@ -1,4 +1,9 @@
-export default {
-	'test:message': config => data => [].concat(data, 'hello from module2'),
-}
+export default (plugins) => {
 
+	return {
+		'extra': () => 'extra-data',
+		'test:message': data => {
+			return [].concat(data, 'hello from module2')
+		},
+	}
+}
