@@ -45,7 +45,7 @@ export type ModuleMainConfig = Record<PluginName, ModuleSubConfig>;
 export type ModuleConfig = ModuleMainConfig | ModuleSubConfig & { _ModuleConfig: never };
 export type IPlugConfig = (Record<PluginName, ModuleConfig> | Record<string, unknown> | string | number | boolean) & { _Config: never };
 
-export default async function iPlug(modules: PluginManifest, config: IPlugConfig): Promise<IPlugMessageBus> {
+export default async function iPlug(modules: PluginManifest, config?: IPlugConfig): Promise<IPlugMessageBus> {
 	const notReady = (): never => {	throw new Error('plugins/messagebus unavailable at') };
 
 	const identity: Handler = x => x;
@@ -64,7 +64,7 @@ export default async function iPlug(modules: PluginManifest, config: IPlugConfig
 	const initModule = (name: PluginName, module: PluginModule): PluginManifest | Promise<PluginManifest> =>
 		isPluginManifest(module)
 			? <PluginManifest>module
-			: module(messagebus, (config.hasOwnProperty(name) ? <IPlugConfig>(<ModuleMainConfig>config)[name] : config));
+			: module(messagebus, (config?.hasOwnProperty(name) ? <IPlugConfig>(<ModuleMainConfig>config)[name] : config));
 
 	const initModules = async ([name, module]: [PluginName, PluginModule]): Promise<[PluginName, PluginManifest]> =>
 		[name, await initModule(name, module)];
