@@ -32,7 +32,9 @@ export type IPlugMessageBus = SerialCall<unknown, unknown> & {
 	add: (name: PluginName, m: PluginModule) => void;
 	one: SingleCall<unknown, unknown>;
 	serial: SerialCall<unknown, unknown>;
+	reduce: SerialCall<unknown, unknown>;
 	parallel: ParallelCall<unknown, unknown>;
+	map: ParallelCall<unknown, unknown>;
 };
 export type iPlug = IPlugMessageBus;
 export type PluginModule = PluginManifest | ((plugins: iPlug, config?: IPlugConfig) => Promise<PluginManifest>);
@@ -57,6 +59,8 @@ export default async function iPlug(modules: PluginManifest, config?: IPlugConfi
 	messagebus.serial = serial;
 	messagebus.one = (msg: Topic, initialData: unknown) => getHooks(msg, [identity]).slice(0, 1).reduce(callPlugin, initialData);
 	messagebus.parallel = <I, O>(msg: Topic, seedData: I) => <O>getHooks(msg, <Handler[]>[]).map(function parallel(plugin){return <I>plugin(seedData)});
+	messagebus.map = messagebus.parallel;
+	messagebus.reduce = messagebus.serial;
 	messagebus.init = () => messagebus;
 
 	const kvp = <[PluginName, PluginModule][]>Object.entries(modules ?? <PluginModule>{});
