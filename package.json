@@ -2,14 +2,14 @@
   "name": "iplug",
   "version": "2.0.0-rc",
   "description": "The lightest JavaScript plugin manager and messagebus for the async map/reduce world",
-  "main": "dist/iplug.cjs",
-  "module": "dist/iplug.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
   "exports": {
     ".": {
-      "import": "./dist/iplug.mjs",
-      "require": "./dist/iplug.cjs",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
       "browser": {
-        "default": "./dist/iplug.mjs"
+        "default": "./dist/index.mjs"
       }
     }
   },
@@ -17,7 +17,7 @@
   "scripts": {
     "build": "rimraf dist && rollup --bundleConfigAsCjs --config rollup.config.ts --configPlugin typescript",
     "dev": "rimraf dist && rollup -w --bundleConfigAsCjs --config rollup.config.ts --configPlugin typescript",
-    "test": "npx ts-jest --env=node",
+    "test": "jest",
     "debug-examples": "node --loader ts-node/esm --inspect-brk examples/es6/index.js",
     "preversion": "npm test",
     "version": "npm run build && git add -fA dist",
