@@ -1,4 +1,4 @@
 export default {
-	'test:message': config => data => 20,
+	'test:message': data => 20,
 }
 

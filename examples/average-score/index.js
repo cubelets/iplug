@@ -1,4 +1,4 @@
-import plug from '../../dist/iplug.mjs'
+import plug from '../../dist/index.mjs'
 
 import module1 from './plugins/module1.js'
 import module2 from './plugins/module2.js'
@@ -10,7 +10,7 @@ const modules = {
 	module3,
 }
 
-const plugins = plug(modules).init()
+const plugins = await plug(modules)
 const add = (a, b) => a+b
 
 function main() {
