@@ -1,5 +1,5 @@
 # iPlug
-> The lightest JavaScript plugin system for the map/reduce world
+> The lightest JavaScript plugin system & messagebus for the Map/Reduce World
 
 ## Installation
 Using npm:
