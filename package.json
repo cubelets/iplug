@@ -57,7 +57,7 @@
     "@rollup/plugin-node-resolve": "^13.0.4",
     "babel-jest": "^29.7.0",
     "babel-register": "^6.26.0",
-    "http-server": "^13.0.2",
+    "http-server": "^14.1.1",
     "jest": "^27.5.1",
     "rimraf": "^5.0.8",
     "rollup": "^2.56.3",
