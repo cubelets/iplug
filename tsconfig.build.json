@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base",
+  "compilerOptions": {
+    "declaration": true,
+    "rootDir": "./src"
+  },
+  "files": ["global.d.ts"],
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "build"]
+}

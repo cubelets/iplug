@@ -1,20 +1,12 @@
-const common = {
-  verbose: true,
-  testPathIgnorePatterns: ['<rootDir>/node_modules/'],
-  coveragePathIgnorePatterns: ['node_modules'],
-  transform: {
-    '^.+\\.[jt]s$': 'babel-jest',
-  },
-  moduleFileExtensions: ['js'],
-};
-
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-  projects: [
-    {
-      ...common,
-      displayName: 'node',
-      testEnvironment: 'node',
-      testRegex: '/src/.*\\.spec\\.js$',
-    },
+  moduleFileExtensions: ['js', 'ts'],
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/(?!src/)',
   ],
+  transform: { '^.+\\.(j|t)s(x)?$': 'esbuild-jest' },
+  transformIgnorePatterns: ['<rootDir>/node_modules/'],
 };

@@ -1,4 +1,4 @@
-import iplug from '../../dist/iplug.mjs'
+import iplug from '../../dist/index.mjs'
 
 import module1 from './plugins/module1.js'
 import module2 from './plugins/module2.js'
@@ -16,7 +16,7 @@ const config = {
 
 const concat = (a, b) => `${a}\n${b}`
 
-const plugins = iplug(modules).init(null, config)
+const plugins = await iplug(modules, config)
 
 function main() {
 	const jobs = plugins

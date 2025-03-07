@@ -1,80 +1,74 @@
 # iPlug
-> The lightest JavaScript plugin system / plugin manager / messagebus for the map/reduce world
+> The lightest JavaScript plugin system for the Map/Reduce World
+
+![iPlug Logo](./iplug-github.png)
 
 ## Installation
-Using npm:
-
-``` sh
+```sh
 npm install --save iplug
 ```
 
 ## Usage
-You want to use plugins to dynamically extend the functionality of your code.
+Extend your JavaScript application with declarative plugins
 
-The core part of your application loads your plugins and creates one or more message buses to communicate with them, through a number of topics.
-Plugins can register their interest to any number of topics.
-When you want to defer control to plugins you emit a message on a topic and all registered plugins will be invoked, sequentially or in parallel.
+Your application loads your plugins and creates one or more message buses to communicate with them through a number of topics.
+Plugins can register their interest to any number of topics within the scope of a message bus. There can be multiple message buses in your application.
+When you want to defer control to your plugins you emit a message on a topic/channel and all registered plugins will be invoked, either sequentially or in parallel.
 
+### Example
 
-### Hello World
-
-**`main.js`**
 ``` js
+// main.js
 import iplug from 'iplug'
 
 import module1 from './plugins/module1.js'
 import module2 from './plugins/module2.js'
 
 const modules = {
-	module1,
-	module2,
+  module1,
+  module2,
 }
 
-const plugins = iplug(modules).init()
+const plugins = iplug(modules)
 
 function main() {
-	const input = 'test payload'
-	const output = plugins.chain('test:message', input)
-	console.log(output)
+  const input = 'test payload'
+  const output = plugins.serial('test:message', input)
+  console.log(output)
 }
 
 main()
 ```
 
-Each plugin module can export:
-- A manifest object:
-	``` js
-		export default {
-			// ...
-			'message': config => data => ...
-		}
-	```
-- a function that can take an optional argument and returns a manifest object
-	``` js
-		export default (moduleConfig) => {
-			// keep state here for better testability
+Each plugin module can export either:
+A "manifest object":
+``` js
+export default {
+  'message': data => doSomethingWith(data),
+  // ...
+}
+```
+Or a function that takes (messagebus, config) and returns a manifest object
+``` typescript
+export default (messagebus: IPlugMessagebus, config: IPlugConfig): PluginManifest => {
+  // keep state here for better testability
 
-			return {
-				'message': config => data => ...
-				// ...
-			}
-		}
-	```
-
-A manifest object is one whose keys are messagebus messages we want to register to, and handlers to be called when those are emitted
-``` ts
-type Handler<T> = (config: T) => (data: any) => any;
-
-type Manifest<T> = {
-	[message: string]: Handler<T>;
-};
+  return {
+    'message': data => doSomethingWith(data),
+    // ...
+  }
+}
 ```
 
+A manifest object is one whose keys are messagebus topics (typically strings) we want to register to and corresponding handler functions
 **`example-plugin.js`**
 ``` js
 export default {
-	'category1:message1': config => data => `result for a call to category1:message1 - payload was ${data}`,
-	'category2:message2': config => data => `result for a call to category1:message1 - payload was ${data}`,
+  'category1:message1': data =>
+    `result for a call to category1:message1 - payload: ${data}`,
+
+  'category2:message2': data =>
+    `result for a call to category1:message1 - payload: ${data}`,
 }
 ```
 
@@ -85,170 +79,164 @@ There are two ways you can call plugins: in sequence, or in parallel.
 Calling plugins in sequence means starting with an optional initial value, and chaining it through each, so the output of one becomes the input of the next, and the final result is the output of the last.
 This is useful when your plugins can be somewhat aware of each-other and the output of any may be the final one.
 
-**`main.js`**
 ``` js
+// main.js
 // this returns the output of the last plugin in the chain
-plugins.chain(<message> [, initial data])
+plugins.serial(<message> [, initial data])
 plugins.reduce(<message> [, initial data])
-plugins(<message>, [initial data])
+plugins(<message> [, initial data])
 ```
 
-`reduce` is an alias for `chain`.
-For chained calls you can also omit both the `chain` or `reduce` keywords and just call:
+If no plugins are registered for a topic, emitting a message returns the initial data, if provided, undefined otherwise.
+``` js
+// main.js
+// no plugin handles 'empty topic'
+plugins.serial('empty topic', 'default data')
+
+// returns 'default data'
+```
 
 #### Parallel processing
-Calling plugins in parallel means passing the same optional initial value, then collecting the results of each together, which come out as an array, perhaps for further processing.
-This is useful if you want to run many plugins in parallel, especially async ones, or that need to run in isolation from the input or the output of the other plugins.
+You can call plugins in parallel, sync or async ones. Initial data will be passed to each as an argument.
 
-**`main.js`**
 ``` js
+// main.js
 // this returns an array of your plugins' output
 plugins.map(<message> [, initial data])
-plugins.all(<message> [, initial data])
 plugins.parallel(<message> [, initial data])
 ```
 
-`all` is an alias for `map`
+#### Singleton processing
+Occasionally, you may need to only allow one plugin to handle a topic
+
+``` js
+// main.js
+// this only runs at most one plugin and returns its output. If more than one are registered, only the first is run, the others are ignored.
+// If no handler is registered, the initial data is returned
+plugins.one(<message> [, initial data])
+```
 
 ### Example: Content Moderation
 You want to use plugins to moderate content before rendering it, by passing it through a number of plugins, each of which has to approve the content.
 
-**`module.js`**
 ``` js
+// module.js
 import {moderation} from './moderation.js
-const pluginsList = [moderation]
-const config = { }
-const plugins = iplug(pluginsList, config)
+const config = {
+  moderation: { enabled: true },
+};
 
-const initialData[] = await fetch('/api/getMessages').then(x=>x.json())
-const result = plugins('moderate', data)
+const plugins = await iplug({moderation}, config);
+
+const initialData = await fetch('/api/getMessages').then(x=>x.json());
+const result = plugins('moderate', data);
 ```
 
-**`moderation.js`**
 ``` js
-export default {
-	'moderate': config => {
-		const blackList = await fetch('/word-blacklist').then(x=>x.json())
-		return data[] => data.map(str => blackList.forEach(word => str.replace(word, '###redacted###')))
-	}
-}
+// moderation.js
+export default async () => {
+  const blackList = await fetch('/word-blacklist')
+    .then(x=>x.json());
+
+  return {
+    'moderate': data => data.map(str =>
+      blackList.forEach(word =>
+        str.replace(word, '###redacted###')
+      )
+    )
+  }
+};
 ```
 
 ### Advanced usage: streaming plugins with Observables
 You may want each plugin to emit more data over time, effectively exposing an Observable interface back to the main application
 
-**`plugin.js`**
 ``` js
+// plugin.js
 import { Observable } from 'rxjs'
-const sourceStream = Observable(...)
+const sourceStream = Observable(...);
 
 export default {
-	'getdata': config => data => sourceStream,
+  'getdata': data => sourceStream,
 }
 ```
 
-**`app.js`**
 ``` js
-import { merge } from 'rxjs'
+// app.js
+import { merge } from 'rxjs';
 
 // Get an Observable from each plugin.
-const streams = streamingPlugins.map('getdata')
-merge(streams)
-	.subscribe(doSomething)
-
+const plugins = await iplug({});
+const streams = streamingPlugins.map('getdata');
+merge(streams).pipe(
+  subscribe(doSomething)
+);
 ```
 
 ### Advanced usage: duplex streams via Observables
 You can pass an observable to each of your plugins and get one back to enable two-way communication over time
 
-**`echo.js`**
 ``` js
-import { Observable } from 'rxjs'
-const sourceStream = Observable(...)
+// echo.js
+import { map } from 'rxjs'
 
 export default {
-	'duplex': config => { inputStream } => inputStream.map(inputMessage=>`This is a reply to ${inputMessage}.`,
+  'duplex': ({ inputStream }) => inputStream.pipe(
+    map(inputMessage=>`This is a reply to ${inputMessage}.`)
+  ),
 }
 ```
 
-**`app.js`**
 ``` js
-import { Subject } from 'rxjs'
-import { merge } from 'rxjs'
+// app.js
+import { Subject, merge } from 'rxjs'
 
-const outputStream = new Subject()
+const outputStream = new Subject();
 
-const streams = streamingPlugins.map('duplex', outputStream)
-merge(streams)
-	.subscribe(doSomething)
+const allStreams = merge(streamingPlugins.pipe(
+  map('duplex', outputStream)
+));
+
+allStreams.subscribe(doSomething);
 
 ```
 
-## Why should every plugin export a function returning a function?
-This extra step allows some plugins to perform some one-time (perhaps slow) initialisation and return a "production" function that's geared up for faster, repeated executions.
-It's often best to perform initialisation in the main handler function to enable multiple instances of the same plugin to be used in different isolated contexts (multiple message buses in the same application).
-
-**`plugin.js`**
-``` js
-// some global initialisation can go here, but the state will be shared!
-// ...
-
-export default {
-	'message:handler': config => {
-		// perform some more initialisation here when you want more isolation.
-		// const slow = slowOperation
-		return data => {
-			// put your performance-optimised code here, to run multiple times
-		}
-	}
-}
-```
-
-**`main.js`**
-``` js
-// The following two message buses are meant to run independently
-const messageBus1 = plugins()
-const messageBus2 = plugins()
-
-// The following two calls will be run in isolation from each-other
-messageBus1.chain('message:handler')
-messageBus2.chain('message:handler')
-```
-
-## Unit testing your plugins
+## Unit testing plugins
 Writing unit tests for your plugins should be just as simple as calling the function they export for a particular event/topic.
 
 ``` js
-import plugin from '/plugins/double-it.js'
+import module from '/plugins/double-it.js'
 
 describe('plugin1', () => {
-	describe('when handling a "test:topic"', () => {
+  describe('when handling a "test:topic"', () => {
 
-		it('doubles its input', () => {
-			const fn = plugin['test:topic']()
-			expect(fn(2)).toEqual(4)
-		});
+    it('doubles its input', () => {
+      const plugin = module();
+      const fn = plugin['test:topic']();
+      expect(fn(2)).toEqual(4);
+    });
 
-	});
+  });
 });
 ```
 
 Following is an example unit test for a hypothetical plugin that returns 0, written for Jest, but easily adaptable to other test frameworks.
 
 ``` js
-import plugin from '/plugins/plugin2.js'
+import module from '/plugins/plugin2.js'
 import fixture from '/plugins/plugin2.fixture.js'
 
 describe('plugin2', () => {
-	describe('when handling a "test:event"', () => {
+  describe('when handling a "test:event"', () => {
 
-		it('returns 0', () => {
-			const fn = plugin['test:event']()
-			const result = fn(fixture)
-			expect(result).toEqual(0)
-		});
+    it('returns 0', () => {
+      const plugin = module();
+      const fn = plugin['test:event']();
+      const result = fn(fixture);
+      expect(result).toEqual(0);
+    });
 
-	});
+  });
 });
 ```
 
@@ -257,10 +245,10 @@ Global variables, even inside an ES6 module, can pose various challenges to unit
 Consider the follwing plugin:
 
 ``` js
-const globalState = get_some_state()
+const globalState = get_some_state();
 
 export default {
-	'message:handler': config => data => globalState(data),
+  'message:handler': config => data => globalState(data),
 }
 ```
 
@@ -271,11 +259,11 @@ A solution to this problem is creating a plugin that exports a function, which i
 
 ``` js
 export default function() {
-	const globalState = get_some_state()
+  const globalState = get_some_state();
 
-	return {
-		'message:handler': config => data => globalState(data),
-	}
+  return {
+    'message:handler': config => data => globalState(data),
+  }
 }
 ```
 
@@ -285,22 +273,20 @@ This way, no global state will remain between test runs.
 import initModule from '/plugins/plugin.js'
 
 describe('plugin', () => {
-	describe('when handling a "test:event"', () => {
+  describe('when handling a "test:event"', () => {
 
-		it('returns 0', () => {
-			// Loading the plugin from a test will need this one extra line
-			const plugin = initModule()
+    it('returns 0', () => {
+      // Loading the plugin from a test will need this one extra line
+      const plugin = initModule();
 
-			const fn = plugin['test:event']()
-			const result = fn(fixture)
-			expect(result).toEqual(0)
-		});
+      const fn = plugin['test:event']();
+      const result = fn(fixture);
+      expect(result).toEqual(0);
+    });
 
-	});
+  });
 });
 ```
 
-
 ## Examples
-You can find more [examples](https://github.com/cubelets/iplug/tree/master/examples) in the respective folder
-
+You can find more [examples](./examples) in the respective folder

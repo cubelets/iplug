@@ -1,4 +1,4 @@
-import iplug from '../../dist/iplug.mjs'
+import iplug from '../../dist/index.mjs'
 
 import module1 from './plugins/module1.js'
 import module2 from './plugins/module2.js'
@@ -8,13 +8,17 @@ const modules = {
 	module2,
 }
 
-const plugins = iplug(modules).init()
+const config = {
+	key1: 'value1',
+	key2: 'value2',
+}
+
+const plugins = await iplug(modules, config)
 
 function main() {
-	const input = 'test payload'
-	const output = plugins.map('test:message', input)
-	console.log(output)
+	const input = 'hello'
+	const output = plugins.parallel('test:message', input)
+	output.forEach(x=>console.log(JSON.stringify(x)));
 }
 
 main()
-

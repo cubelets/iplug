@@ -3,6 +3,6 @@ const mainFunction = () => `
 `
 
 export default {
-	'html:features': config => mainFunction,
+	'html:features': mainFunction,
 }
 

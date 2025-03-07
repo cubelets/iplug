@@ -3,6 +3,6 @@ const runner = payload => new Promise(resolve => {
 })
 
 export default {
-	'html:features': config => runner,
+	'html:features': runner,
 }
 
