@@ -19,5 +19,6 @@
     "noImplicitThis": false,
     "typeRoots": ["node_modules/@types"]
   },
-  "exclude": ["node_modules"]
+  "include": ["rollup.config.ts", "src/**/*", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "@types", "dist", "build"]
 }

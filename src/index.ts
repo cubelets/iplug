@@ -1,19 +1,21 @@
-import { PluginManifest, IPlugConfig, IPlugMessageBus, Handler, Topic, PluginName, PluginModule, isPluginManifest, ModuleMainConfig, TopicRegistry } from './types';
+import type { PluginManifest, IPlugConfig, IPlugMessageBus, Handler, Topic, PluginName, PluginModule, ModuleMainConfig, TopicRegistry } from './types';
+export type { PluginManifest, IPlugConfig, IPlugMessageBus, Handler, Topic, PluginName, PluginModule, ModuleMainConfig } from './types';
 
+import { isPluginManifest } from './types';
 export { mockPlug } from './mock';
 
-export default async function iPlug(modules: PluginManifest, config?: IPlugConfig): Promise<IPlugMessageBus> {
-	const notReady = (): never => {	throw new Error('plugins/messagebus unavailable at') };
+// const notReady = (): never => { throw new Error('plugins/messagebus unavailable at') };
 
+export default async function iPlug(modules: PluginManifest, config?: IPlugConfig): Promise<IPlugMessageBus> {
 	const identity: Handler = x => x;
 	const getHooks = (msg: Topic, defaultHooks: Handler[]): Handler[] => (hooks.get(msg) ?? defaultHooks);
 	const callPlugin = (data: unknown, plugin: Handler) => plugin(data);
-	const serial = (msg: Topic, initialData: unknown) => getHooks(msg, [identity]).reduce(callPlugin, initialData);
+	const serial = (msg: Topic, initialData: unknown) => performance.mark(msg) && getHooks(msg, [identity]).reduce(callPlugin, initialData);
 
 	const messagebus = <IPlugMessageBus>serial;
 	messagebus.serial = serial;
 	messagebus.one = (msg: Topic, initialData: unknown) => getHooks(msg, [identity]).slice(0, 1).reduce(callPlugin, initialData);
-	messagebus.parallel = <I, O>(msg: Topic, seedData: I) => <O>getHooks(msg, <Handler[]>[]).map(function parallel(plugin){return <I>plugin(seedData)});
+	messagebus.parallel = <I, O>(msg: Topic, seedData: I) => performance.mark(msg) && <O>getHooks(msg, <Handler[]>[]).map(function parallel(plugin){return <I>plugin(seedData)});
 	messagebus.map = messagebus.parallel;
 	messagebus.reduce = messagebus.serial;
 	messagebus.init = () => messagebus;
@@ -23,7 +25,8 @@ export default async function iPlug(modules: PluginManifest, config?: IPlugConfi
 	const initModule = (name: PluginName, module: PluginModule): PluginManifest | Promise<PluginManifest> =>
 		isPluginManifest(module)
 			? <PluginManifest>module
-			: module(messagebus, (config?.hasOwnProperty(name) ? <IPlugConfig>(<ModuleMainConfig>config)[name] : config));
+			// : module(messagebus, (config?.hasOwnProperty(name) ? <IPlugConfig>(<ModuleMainConfig>config)[name] : config));
+			: module(messagebus, config);
 
 	const initModules = async ([name, module]: [PluginName, PluginModule]): Promise<[PluginName, PluginManifest]> =>
 		[name, await initModule(name, module)];
@@ -52,4 +55,4 @@ export default async function iPlug(modules: PluginManifest, config?: IPlugConfi
 	};
 
 	return messagebus;
-}
+};

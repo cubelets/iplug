@@ -17,9 +17,9 @@ export type SerialHandler<InputType, OutputType> = (data?: InputType) => OutputT
 export type ParallelHandler<InputType, OutputType> = (data?: InputType) => OutputType;
 export type AnyHandler<InputType, OutputType> = SingleHandler<InputType, OutputType> | SerialHandler<InputType, OutputType> | ParallelHandler<InputType, OutputType>;
 export type Handler = AnyHandler<unknown, unknown>;
-type SingleCall<InputType, OutputType> = (msg: Topic, initialData: InputType) => OutputType;
-type SerialCall<InputType, OutputType> = (msg: Topic, initialData: InputType) => OutputType;
-type ParallelCall<InputType, OutputType> = (msg: Topic, seedData: InputType) => OutputType[];
+export type SingleCall<InputType, OutputType> = (msg: Topic, initialData: InputType) => OutputType;
+export type SerialCall<InputType, OutputType> = (msg: Topic, initialData: InputType) => OutputType;
+export type ParallelCall<InputType, OutputType> = (msg: Topic, seedData: InputType) => OutputType[];
 /**
  * A map of topic:handlers managed by a plugin
  */

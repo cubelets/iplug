@@ -1,10 +1,10 @@
 {
   "name": "iplug",
-  "version": "2.0.0-rc",
-  "description": "The lightest JavaScript plugin manager and messagebus for the async map/reduce world",
+  "version": "1.0.0-rc1",
+  "description": "The lightest JavaScript plugin system for the Map/Reduce World",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
@@ -14,6 +14,9 @@
       }
     }
   },
+  "files": [
+    "dist/"
+  ],
   "type": "module",
   "scripts": {
     "build": "rimraf dist && rollup --bundleConfigAsCjs --config rollup.config.ts --configPlugin typescript",
@@ -25,7 +28,7 @@
     "postversion": "git push && git push --tags"
   },
   "testMatch": [
-    "**/*.spec.(ts|js)"
+    "**/src/**/*.spec.(ts|js)"
   ],
   "repository": {
     "type": "git",
