@@ -55,7 +55,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.11.5",
+    "@types/node": "^22.13.10",
     "esbuild": "^0.19.11",
     "esbuild-jest": "^0.5.0",
     "http-server": "^13.0.2",
